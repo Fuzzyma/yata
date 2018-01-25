@@ -1,0 +1,30 @@
+{
+  "name": "yata",
+  "version": "0.0.1",
+  "description": "A lightweight library for communication with the Telegram Bot Api",
+  "main": "yata.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Ulrich-Matthias Schäfer",
+  "license": "MIT",
+  "dependencies": {
+    "deep-assign": "^2.0.0",
+    "request": "^2.83.0",
+    "request-promise-native": "^1.0.5"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/Fuzzyma/yata.git"
+  },
+  "keywords": [
+    "Telegram",
+    "Bot",
+    "Api",
+    "Yata"
+  ],
+  "bugs": {
+    "url": "https://github.com/Fuzzyma/yata/issues"
+  },
+  "homepage": "https://github.com/Fuzzyma/yata#readme"
+}
