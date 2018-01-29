@@ -25,10 +25,14 @@ const messageTypes = [
   'invoice', 'successful_payment'
 ]
 
-class Botty {
+class Yata {
   constructor (config = {}) {
-    this.events = []
+    this.updateEvents = []
+    this.messageEvents = []
+    this.textEvents = []
     this.mods = []
+    this.plugins = []
+    this.errorHandler = () => {}
     this.config = deepAssign ({}, defaultConfig, config)
 
     this.token = this.config.token
@@ -36,7 +40,7 @@ class Botty {
     if(!this.token) throw new Error('No token specified in config')
 
     this.url = endpoint + this.token + '/'
-    
+
     if(this.config.polling) {
       this.setupPolling()
     } else if (this.config.webhook.open) {
@@ -46,6 +50,10 @@ class Botty {
 
   log (...args) {
     this.config.log && this.config.log(...args)
+  }
+
+  setErrorHandler (fn){
+    this.errorHandler = fn
   }
 
   makeFlat (obj) {
@@ -100,23 +108,31 @@ class Botty {
     return obj
   }
 
-  call (method, obj) {
-    var options = {
+  async call (method, params, plugin = {}) {
+
+    var {method, params} = await this.pluginRun({method, params, plugin})
+
+    let options = {
       uri: this.url + method,
       json: true
     }
 
-    if(this.hasFormData(obj)) {
+    if(this.hasFormData(params)) {
       options.method = 'POST'
-      options.formData = this.makeFormData(obj)
+      options.formData = this.makeFormData(params)
     } else {
-      options.qs = this.makeFlat(obj)
+      options.qs = this.makeFlat(params)
     }
 
-    return request(options).then((response) => {
-      if(!response.ok) throw new Error(response.error)
+    const handler = (response) => {
+      if(!response.ok) {
+        this.errorHandler(method, params, response)
+        throw new Error(response)
+      }
       return response.result
-    })
+    }
+
+    return request(options).then(handler, handler)
   }
 
   setupWebhook () {
@@ -136,7 +152,6 @@ class Botty {
   }
 
   startServer () {
-    this.on('update', (update) => this.updateState(update))
     if(!this.config.webhook.server) {
       server(this)
     }
@@ -150,6 +165,14 @@ class Botty {
     return promise
   }
 
+  pluginRun (options) {
+    var promise = Promise.resolve(options)
+    for(let plugin of this.plugins) {
+      promise = promise.then(plugin)
+    }
+    return promise
+  }
+
   callHandler (update) {
     // there is only ONE updateType per update (see https://core.telegram.org/bots/api#update)
     // so it has to be the key which is not 'update_id'
@@ -159,7 +182,7 @@ class Botty {
     }
 
     // emit the updateType as event so user has access to everything
-    this.emit(updateType, update)
+    this.emitUpdate(updateType, update)
 
     // if we get a message of any kind we check the type
     // we do NOT check for edited_message channel posts because this will screw up the handlers
@@ -171,13 +194,13 @@ class Botty {
       // for any type we emit an event
       for(let messageType in msg) {
         if(messageTypes.includes(messageType)) {
-          this.emit(messageType, msg)
+          this.emitMessage(messageType, msg)
         }
       }
 
       // when the message has text we also emit the text as event
       if(msg.text) {
-        this.emit(msg.text, msg)
+        this.emitText(msg.text, msg)
       }
     }
   }
@@ -195,19 +218,47 @@ class Botty {
     this.mods.push(mod)
   }
 
-  on(pattern, fn) {
-    pattern = Array.isArray(pattern) ? pattern : [pattern]
-    pattern.forEach((pattern) => this.events.push({pattern, fn}))
+  plugin (plugin) {
+    this.plugins.push(plugin)
   }
 
-  emit(eventName, relevantData) {
-    for(let event of this.events) {
+  on(pattern, fn, type = 'text') {
+    pattern = Array.isArray(pattern) ? pattern : [pattern]
+    pattern.forEach((pattern) => this[type+'Events'].push({pattern, fn}))
+  }
+
+  onUpdate(...args) {
+    this.on(...args, 'update')
+  }
+
+  onMessage(...args) {
+    this.on(...args, 'message')
+  }
+
+  onText(...args) {
+    this.on(...args, 'text')
+  }
+
+  emit(eventName, relevantData, type = 'text') {
+    for(let event of this[type+'Events']) {
       let match
       if(event.pattern == '*' || event.pattern == eventName || (event.pattern instanceof RegExp && (match = eventName.match(event.pattern)))) {
-        event.fn.call(this.call.bind(this), relevantData, match)
+        event.fn.call(this, relevantData, match)
       }
     }
   }
+
+  emitUpdate(...args) {
+    this.emit(...args, 'update')
+  }
+
+  emitMessage(...args) {
+    this.emit(...args, 'message')
+  }
+
+  emitText(...args) {
+    this.emit(...args, 'text')
+  }
 }
 
-module.exports = Botty
+module.exports = Yata

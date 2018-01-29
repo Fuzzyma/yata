@@ -39,10 +39,16 @@ bot.on(/@(.+)bot/i, (msg, match) {
   })
 })
 
+// multiple choice
 bot.on(['/start', /start/i, 'go'], () => {...})
 
 // every message
-bot.on('*', (msg, match) => {...})
+bot.on('*', (msg) => {...})
+
+// in case you dont use arrow functions you can also use `this` which equals `bot`
+bot.on('*', function(msg) {
+  this.call('sendMessage', {...})
+})
 ```
 
 ## Modify messages before they hit your regular code
@@ -64,7 +70,7 @@ bot.mod(async (update) => {
 })
 
 // cancel the request
-bot.mod('updates', () => {
+bot.mod(() => {
   throw new Error('This was request is not allowed')
 })
 ```
@@ -72,7 +78,10 @@ bot.mod('updates', () => {
 ## Events
 
 Beside the text there are many update and message events you can bind to.
-Some of them pass the [message](https://core.telegram.org/bots/api#message) and some a whole [update](https://core.telegram.org/bots/api#update).
+Message events get passed a [message](https://core.telegram.org/bots/api#message) and update events a whole [update](https://core.telegram.org/bots/api#update).
+
+To bind to an update event use `bot.onUpdate(updateType, handler)` or `bot.on(updateType, handler, 'update')`.  
+Same goes for a message event: `bot.onMessage(messageType, handler)` or `bot.on(updateType, handler, 'message')`.
 
 ### Update-Events
 
@@ -115,7 +124,99 @@ You can pass other options to the yata constructor
   - `server`: See below<sup>\*\*</sup>
 - `}`
 
-\* In case you disable the autoopen feature you need to start it manually with `bot.setupWebhook()`
-\*\* When you pass `true`, its assumed that you setup the endpoint yourself (which is `yourdomain.example/token`).  
+\* In case you disable the autoopen feature you need to start it manually with `bot.setupWebhook()`  
+\*\* When you pass `true`, its assumed that you setup the endpoint yourself (which is `yourdomain.example/API_TOKEN`).  
 To pass an update into the library call `bot.updateState(jsonbody)`  
 This is only useful when you use the server for other things as well (e.g. a website made with express)
+
+
+## API
+
+```js
+const bot = new yata(...)
+```
+
+### bot.call(apiMethod, params, pluginoptions)
+
+Calls the specified method of the api with the given params.
+Returns a promise which resolves to the result or rejects with an error.
+
+You can see all methods at the telegram api doc: https://core.telegram.org/bots/api#available-methods
+
+### bot.setErrorHandler(fn)
+
+Whenever a `bot.call()` failes you can of course catch the rejected promise. However sometimes its useful to have a global handler which is called when a `call` is not successful.
+`setErrorHandler` allows that. The function passed needs the signature `(method, params, response)`
+
+### bot.setupWebhook()
+
+Only needed when you disable the `open` option of the webhook. Call it, when your server is ready for incoming messages.
+
+Example:
+
+```js
+const router = require('someRouterFramework')
+
+router.on('/API_TOKEN', (req) => {
+  bot.updateState(req.body.toJSON())
+})
+
+router.listen(port, () => bot.setupWebhook())
+```
+
+### bot.mod(handler)
+
+Add a method which is called on every update. Note it is first-come first-serve.
+So the mods are executed in the order in which you added them. You can do asyncronous operations in the mod method by returning a Promise.
+However always resolve to the update variable which was passed:
+
+```js
+bot.mod((update) => {
+  // with promise
+  return new Promise((resolve, reject) => resolve(update))
+  
+  // without
+  return updates
+})
+```
+
+### bot.plugin(handler)
+
+Plugins let you alter requests before they are send out. A plugin function is called with `options = { method, params, plugin }` (every argument passed to `call`) and needs to return an object of the same format.
+This way you can easily add functionality e.g. asking the user for something:
+
+```js
+const asks = {}
+
+bot.plugin((options) => {
+  if(options.plugin.ask) {
+    asks[options.params.chat_id] = options.plugin.ask
+  }
+  return options
+})
+
+bot.onMessage('text', (msg) => {
+  if(asks[msg.from.id]) {
+    bot.emitMessage('ask.' + asks[msg.from.id], msg)
+    delete asks[msg.from.id]
+  }
+})
+
+bot.on('/foo', async (msg, match) => {
+  return bot.call('sendMessage', {chat_id: msg.from.id, text: 'Enter foo'}, { ask: 'foo' })
+})
+
+bot.onMessage('ask.foo', async (msg) => {
+  // answer to the question
+  console.log(msg.text)
+})
+```
+
+### bot.on(event, handler, type = 'text')
+
+You can bind events to `update`, `message` and `text`. Update-Events have the names specified [above](#update-events), Message-Events are listed [here](#message-events).
+A text event can be anything the user writes to the bot (thats why this is all seperated because a user could just write `channel_post` which would otherwise trigger the message event `channel_post`).
+
+### bot.onUpdate, bot.onMessage, bot.onText
+
+Shortcuts for `on(event, handler, update||message||text)`

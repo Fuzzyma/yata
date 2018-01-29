@@ -24,7 +24,7 @@ module.exports = (bot) => {
         res.end()
         try {
           const update = JSON.parse(body)
-          bot.emit('update', update)
+          bot.updateState(update)
         } catch (error) {
           bot.log('[bot.error.webhook]', error)
           res.end()
