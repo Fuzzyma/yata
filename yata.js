@@ -181,12 +181,12 @@ class Yata {
       if(updateType != 'update_id') break
     }
 
-    // emit the updateType as event so user has access to everything
-    this.emitUpdate(updateType, update)
+    // emit the updateType as event so user has access to it
+    this.emitUpdate(updateType, update[updateType])
 
     // if we get a message of any kind we check the type
     // we do NOT check for edited_message channel posts because this will screw up the handlers
-    // the user has to manage edited stuff itself by bynding to the update directly
+    // the user has to manage edited stuff itself by bynding to the 'edited_message' update event directly
     if(updateType == 'message' || updateType == 'channel_post') {
 
       let msg = update[updateType]

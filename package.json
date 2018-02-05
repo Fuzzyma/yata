@@ -1,6 +1,6 @@
 {
   "name": "yata",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "A lightweight library for communication with the Telegram Bot Api",
   "main": "yata.js",
   "scripts": {

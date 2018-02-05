@@ -78,7 +78,7 @@ bot.mod(() => {
 ## Events
 
 Beside the text there are many update and message events you can bind to.
-Message events get passed a [message](https://core.telegram.org/bots/api#message) and update events a whole [update](https://core.telegram.org/bots/api#update).
+Message events get passed a [message](https://core.telegram.org/bots/api#message) and update events the content of its update [update](https://core.telegram.org/bots/api#update).
 
 To bind to an update event use `bot.onUpdate(updateType, handler)` or `bot.on(updateType, handler, 'update')`.  
 Same goes for a message event: `bot.onMessage(messageType, handler)` or `bot.on(updateType, handler, 'message')`.
