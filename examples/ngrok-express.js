@@ -18,7 +18,8 @@ let bot = new yata({
 	token: process.env.TELE_TOKEN,
 	webhook: {
 		port: 8443,
-		open: false
+		open: false,
+		server: true
 	}
 })
 
@@ -28,7 +29,7 @@ bot.on('/start', (msg) => {
 })
 
 // Pass the incoming webhook updates to the Yata library.
-app.post(`/${token}`, (req) => {
+app.post(`/${process.env.TELE_TOKEN}`, (req) => {
 	bot.updateState(req.body)
 })
 
