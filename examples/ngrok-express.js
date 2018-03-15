@@ -9,38 +9,39 @@ const ngrok = require('ngrok')
 const express = require('express')
 const bodyParser = require('body-parser')
 
-// express app.
+// Setup the express.js
 const app = express()
 app.use(bodyParser.json())
 
-// Setup the bot.
-let bot = new yata({
-	token: process.env.TELE_TOKEN,
-	webhook: {
-		port: 8443,
-		open: false,
-		server: true
-	}
-})
-
-// A simple message listener.
-bot.on('/start', (msg) => {
-  bot.call('sendMessage', {chat_id: msg.from.id, text: 'Heyho - Welcome to this bot'})
-})
-
-// Pass the incoming webhook updates to the Yata library.
-app.post(`/${process.env.TELE_TOKEN}`, (req) => {
-	bot.updateState(req.body)
-})
-
-// Init the express app, as well as the ngrok and setting up the telegram webhook.
+// Init the express app.
 app.listen(3000, async () => {
+	// Get a new URL from ngrok.
 	const url = await ngrok.connect('127.0.0.1:3000')
-	console.log('ngrok url is: ', url)		
+	// Set up the telegram webhook.
+	const bot = new yata({
+		token: process.env.TELE_TOKEN,
+		webhook: {
+			url: url,
+			port: 8443,
+		server: true			
+		}
+	})
 
-    // Now that we have the ngrok url, we will assign it to the Yata webhook config.
-    bot.config.webhook.url = url
-    
-    // Easy! Yess?
-	bot.setupWebhook()
+	
+	
+	/**
+	* Do somthing with bot here. 
+	*/
+	bot.on('/start', (msg) => {
+		bot.call('sendMessage', {chat_id: msg.from.id, text: 'HeyhoWelcome to this bot'})
+	})
+
+	
+	
+	// Get the Telegram webhook updates and pass them to the Yata. 
+	app.post(`/${process.env.TELE_TOKEN}`, (req, res) => {
+		bot.updateState(req.body)
+
+		return res.sendStatus(200)
+	})
 })
