@@ -157,8 +157,12 @@ Example:
 ```js
 const router = require('someRouterFramework')
 
-router.on('/API_TOKEN', (req) => {
+router.on('/API_TOKEN', (req, res) => {
   bot.updateState(req.body.toJSON())
+  
+  // Send the status code 200 to the Telegram.
+  // (e.g. when using express.js)
+  return res.sendStatus(200) 
 })
 
 router.listen(port, () => bot.setupWebhook())
