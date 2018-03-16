@@ -157,8 +157,12 @@ Example:
 ```js
 const router = require('someRouterFramework')
 
-router.on('/API_TOKEN', (req) => {
+router.on('/API_TOKEN', (req, res) => {
   bot.updateState(req.body.toJSON())
+  
+  // Send the status code 200 to the Telegram.
+  // (e.g. when using express.js)
+  return res.sendStatus(200) 
 })
 
 router.listen(port, () => bot.setupWebhook())
@@ -220,3 +224,8 @@ A text event can be anything the user writes to the bot (thats why this is all s
 ### bot.onUpdate, bot.onMessage, bot.onText
 
 Shortcuts for `on(event, handler, update||message||text)`
+
+### Examples
+The below examples should be very easy to understand. Otherwise, pull requests are appreciated.
+
+- [Use express and ngrok for development environment](https://github.com/Fuzzyma/yata/blob/master/examples/ngrok-express.js)
