@@ -62,9 +62,9 @@ bot.mod((update) => {
 })
 
 // load stuff async
-// if you dont like how hacky this is, scroll down to "Sessions"
 bot.mod(async (update) => {
   let msg = update.message
+  // ofc you can also save it in some global user register or session
   msg.user = await loadUser(msg.from.id)
   return update
 })
@@ -78,7 +78,7 @@ bot.mod(() => {
 ## Events
 
 Beside the text there are many update and message events you can bind to.
-Message events get passed a [message](https://core.telegram.org/bots/api#message) and update events the content of its update [update](https://core.telegram.org/bots/api#update).
+Message events get passed a [message](https://core.telegram.org/bots/api#message) and update events the content of its [update](https://core.telegram.org/bots/api#update).
 
 To bind to an update event use `bot.onUpdate(updateType, handler)` or `bot.on(updateType, handler, 'update')`.  
 Same goes for a message event: `bot.onMessage(messageType, handler)` or `bot.on(updateType, handler, 'message')`.
@@ -207,12 +207,12 @@ bot.onMessage('text', (msg) => {
 })
 
 bot.on('/foo', async (msg, match) => {
-  return bot.call('sendMessage', {chat_id: msg.from.id, text: 'Enter foo'}, { ask: 'foo' })
+  return bot.call('sendMessage', {chat_id: msg.from.id, text: 'What is your name?'}, { ask: 'name' })
 })
 
-bot.onMessage('ask.foo', async (msg) => {
+bot.onMessage('ask.name', async (msg) => {
   // answer to the question
-  console.log(msg.text)
+  bot.call('sendMessage', {chat_id: msg.from.id, text: `Hey ${msg.text} - Welcome to this bot`})
 })
 ```
 
@@ -225,7 +225,15 @@ A text event can be anything the user writes to the bot (thats why this is all s
 
 Shortcuts for `on(event, handler, update||message||text)`
 
+### bot.emit(event, data, type = 'text')
+
+You can also programatically emit events by calling the `emit` method. Again, an event can be anything the user writes to the bot (see above).
+
+### bot.emitUpdate, bot.emitMessage, bot.emitText)
+
+Shortcuts for `emit(event, data, update||message||text)`
+
 ### Examples
-The below examples should be very easy to understand. Otherwise, pull requests are appreciated.
+The examples below should be very easy to understand. Otherwise, pull requests are appreciated.
 
 - [Use express and ngrok for development environment](https://github.com/Fuzzyma/yata/blob/master/examples/ngrok-express.js)
